@@ -37,11 +37,30 @@ module.exports = {
     })
   ],
   resolve: {
-    extensions: [".js"]
+    extensions: [".js"],
+    fallback: {
+      "fs": false,
+      "tls": false,
+      "net": false,
+      "path": false,
+      "zlib": false,
+      "http": false,
+      "https": false,
+      "stream": false,
+      "crypto": false,
+      "buffer": false,
+      "assert": false,
+      "os": false,
+      "url": false
+    } 
   },
   devServer: {
-    contentBase: path.join(__dirname, "dapp"),
     port: 8000,
-    stats: "minimal"
+    devMiddleware: {
+      stats: "minimal"
+    },
+    static: {
+      directory: path.join(__dirname, "dapp")
+    }
   }
 };
