@@ -24,8 +24,7 @@ contract FlightSuretyData {
     */
     constructor
                                 (
-                                ) 
-                                public 
+                                )  
     {
         contractOwner = msg.sender;
     }
@@ -182,6 +181,9 @@ contract FlightSuretyData {
         fund();
     }
 
+    receive() external payable {
+        fund();
+    }
 
 }
 
