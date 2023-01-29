@@ -20,8 +20,25 @@ module.exports = {
             exclude: /node_modules/
         }]
     },
+    resolve: {
+        extensions: [".js"],
+        fallback: {
+          "fs": false,
+          "tls": false,
+          "net": false,
+          "path": false,
+          "zlib": false,
+          "http": false,
+          "https": false,
+          "stream": false,
+          "crypto": false,
+          "buffer": false,
+          "assert": false,
+          "os": false,
+          "url": false
+        } 
+      },
     plugins: [
-        new StartServerPlugin('server.js'),
         new webpack.HotModuleReplacementPlugin(),
         new webpack.NoEmitOnErrorsPlugin(),
         new webpack.DefinePlugin({
