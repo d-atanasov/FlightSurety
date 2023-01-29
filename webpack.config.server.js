@@ -8,7 +8,8 @@ module.exports = {
         'webpack/hot/poll?1000',
         './src/server/index'
     ],
-    watch: true,
+    devtool: 'source-map',
+    watch: false,
     target: 'node',
     externals: [nodeExternals({
         allowlist: ['webpack/hot/poll?1000']
@@ -20,24 +21,6 @@ module.exports = {
             exclude: /node_modules/
         }]
     },
-    resolve: {
-        extensions: [".js"],
-        fallback: {
-          "fs": false,
-          "tls": false,
-          "net": false,
-          "path": false,
-          "zlib": false,
-          "http": false,
-          "https": false,
-          "stream": false,
-          "crypto": false,
-          "buffer": false,
-          "assert": false,
-          "os": false,
-          "url": false
-        } 
-      },
     plugins: [
         new webpack.HotModuleReplacementPlugin(),
         new webpack.NoEmitOnErrorsPlugin(),
