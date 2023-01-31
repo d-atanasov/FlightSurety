@@ -11,7 +11,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     struct Insurance {
-        uint256 flightNumber;
+        string flightNumber;
         uint256 ammount;
     }
 
@@ -20,6 +20,9 @@ contract FlightSuretyData {
     mapping(address => uint256) private authorizedContracts;
     mapping(address => bool) private airlines;
     mapping(address => Insurance[]) private insurances;
+    mapping(address => uint256) private airlineRegistrationRequests;
+
+    uint256 private numAirlines = 0;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -30,7 +33,7 @@ contract FlightSuretyData {
      *      The deploying account becomes contractOwner
      */
     constructor() {
-        contractOwner = msg.sender;
+        contractOwner = payable(msg.sender);
     }
 
     /********************************************************************************************/
@@ -111,8 +114,22 @@ contract FlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address airlineAddress) external {
-        airlines[airlineAddress] = true;
+    function registerAirline(address newAairlineAddress)
+        external
+        requireIsOperational
+        returns (uint256 votes)
+    {
+        require(!airlines[newAairlineAddress], "Airline is already registered.");
+        require(airlines[msg.sender] || numAirlines == 0, "Only existing airlines can register a new one.");
+
+        if (numAirlines <= 4 || (airlineRegistrationRequests[newAairlineAddress] > numAirlines / 2)) {
+            airlines[newAairlineAddress] = true;
+            numAirlines++;
+        } else {
+            airlineRegistrationRequests[newAairlineAddress] = airlineRegistrationRequests[newAairlineAddress]++;
+        }
+
+        return airlineRegistrationRequests[newAairlineAddress] != 0 ? airlineRegistrationRequests[newAairlineAddress] : 1;
     }
 
     function isAirline(address airlineAddress) external view returns (bool) {
@@ -123,7 +140,11 @@ contract FlightSuretyData {
      * @dev Buy insurance for a flight
      *
      */
-    function buy(uint256 flightNumber) external payable {
+    function buy(string memory flightNumber)
+        external
+        payable
+        requireIsOperational
+    {
         insurances[msg.sender].push(
             Insurance({flightNumber: flightNumber, ammount: msg.value})
         );
@@ -133,22 +154,24 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees() external pure {
-
-    }
+    function creditInsurees() external pure {}
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay(uint256 flightNumber) external pure {
-         for (uint256 i = 0; i < insurances[msg.sender].length; i++) {
-            if (insurances[msg.sender][i].flightNumber == flightNumber) {
-                    uint256 prev = insurances[msg.sender][i].ammount;
-                    delete insurances[msg.sender][i];
-                    payable(msg.sender).transfer(prev.mul(15).div(10));
+    function pay(string memory flightNumber) external requireIsOperational {
+        for (uint256 i = 0; i < insurances[msg.sender].length; i++) {
+            string memory currentFlightNumber = insurances[msg.sender][i].flightNumber;
+            if (
+                keccak256(abi.encodePacked(currentFlightNumber)) ==
+                keccak256(abi.encodePacked(flightNumber))
+            ) {
+                uint256 prev = insurances[msg.sender][i].ammount;
+                delete insurances[msg.sender][i];
+                payable(msg.sender).transfer(prev.mul(15).div(10));
             }
-         }
+        }
     }
 
     /**
@@ -156,7 +179,7 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund() public payable {
+    function fund() public payable requireIsOperational {
         contractOwner.transfer(msg.value);
     }
 
