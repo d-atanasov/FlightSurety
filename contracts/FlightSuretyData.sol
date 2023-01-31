@@ -22,6 +22,7 @@ contract FlightSuretyData {
     mapping(address => bool) private airlines;
     mapping(address => Insurance[]) private insurances;
     mapping(address => address[]) private airlineRegistrationRequests;
+    mapping(address => uint256) private fundingByAirline;
 
     uint256 private numAirlines = 0;
 
@@ -149,6 +150,10 @@ contract FlightSuretyData {
         return airlines[airlineAddress];
     }
 
+    function hasEnoughFunds(address airlineAddress) external view returns (bool) {
+        return fundingByAirline[airlineAddress] >= 10;
+    }
+
     /**
      * @dev Buy insurance for a flight
      *
@@ -194,6 +199,7 @@ contract FlightSuretyData {
      */
     function fund() public payable requireIsOperational {
         contractOwner.transfer(msg.value);
+        fundingByAirline[tx.origin] = fundingByAirline[tx.origin].add(msg.value);
     }
 
     function getFlightKey(

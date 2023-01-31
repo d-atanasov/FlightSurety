@@ -122,5 +122,15 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(await config.flightSuretyData.isAirline.call(accounts[5]), true, "Airline 5 should be registered");
   });
   
- 
+  it('Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
+    let testFlight = "Test Flight";
+    try {
+        await config.flightSuretyApp.registerFlight(accounts[5], testFlight, {from: accounts[5]});
+    } catch(e) {}
+    assert.equal(await config.flightSuretyApp.isFlightRegistered.call(testFlight), false, "The flight should not be registered");
+
+    await config.flightSuretyData.fund({from: accounts[5], value: 10});
+    await config.flightSuretyApp.registerFlight(accounts[5], testFlight, {from: accounts[5]});
+    assert.equal(await config.flightSuretyApp.isFlightRegistered.call(testFlight), true, "The flight should be registered");
+  });
 });

@@ -111,12 +111,24 @@ contract FlightSuretyApp {
         external
         requireIsOperational
     {
+        require(msg.sender == airlineAddress, "Cannot register flight for another airline.");
+        require(dataContract.hasEnoughFunds(airlineAddress), "The Airline do not have enough funds deposited, to create a flight.");
+
         flights[flightNumber] = Flight({
             isRegistered: true,
             statusCode: STATUS_CODE_UNKNOWN,
             updatedTimestamp: block.timestamp,
             airline: airlineAddress
         });
+    }
+
+    function isFlightRegistered(string memory flightNumber)
+        external
+        view
+        requireIsOperational
+        returns (bool)
+    {
+        return flights[flightNumber].isRegistered;
     }
 
     /**
