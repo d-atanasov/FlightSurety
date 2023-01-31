@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "../node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "../node_modules/truffle/build/console.sol";
 
 contract FlightSuretyData {
     using SafeMath for uint256;
@@ -20,7 +21,7 @@ contract FlightSuretyData {
     mapping(address => uint256) private authorizedContracts;
     mapping(address => bool) private airlines;
     mapping(address => Insurance[]) private insurances;
-    mapping(address => uint256) private airlineRegistrationRequests;
+    mapping(address => address[]) private airlineRegistrationRequests;
 
     uint256 private numAirlines = 0;
 
@@ -120,16 +121,28 @@ contract FlightSuretyData {
         returns (uint256 votes)
     {
         require(!airlines[newAairlineAddress], "Airline is already registered.");
-        require(airlines[msg.sender] || numAirlines == 0, "Only existing airlines can register a new one.");
+        require(airlines[tx.origin] || numAirlines == 0, "Only existing airlines can register a new one.");
 
-        if (numAirlines <= 4 || (airlineRegistrationRequests[newAairlineAddress] > numAirlines / 2)) {
+
+        bool isDuplicate = false;
+        for(uint i=0; i < airlineRegistrationRequests[newAairlineAddress].length; i++) {
+            if (airlineRegistrationRequests[newAairlineAddress][i] == tx.origin) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        require(!isDuplicate, "Airline was already registred by the current airline caller.");
+
+        airlineRegistrationRequests[newAairlineAddress].push(tx.origin);
+        uint256 numberOfVotes = airlineRegistrationRequests[newAairlineAddress].length;
+
+        if (numAirlines < 4 || (numberOfVotes > numAirlines.div(2))) {
             airlines[newAairlineAddress] = true;
             numAirlines++;
-        } else {
-            airlineRegistrationRequests[newAairlineAddress] = airlineRegistrationRequests[newAairlineAddress]++;
+            delete airlineRegistrationRequests[newAairlineAddress];
         }
 
-        return airlineRegistrationRequests[newAairlineAddress] != 0 ? airlineRegistrationRequests[newAairlineAddress] : 1;
+        return numberOfVotes;
     }
 
     function isAirline(address airlineAddress) external view returns (bool) {

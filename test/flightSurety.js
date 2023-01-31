@@ -8,6 +8,7 @@ contract('Flight Surety Tests', async (accounts) => {
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    await config.flightSuretyApp.registerAirline(config.firstAirline, {value: 1});
   });
 
   /****************************************************************************************/
@@ -89,6 +90,37 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
   });
- 
 
+  it('First airline is registered when contract is deployed.', async () => {
+    let result = await config.flightSuretyData.isAirline(config.firstAirline); 
+    assert.equal(result, true, config.firstAirline + " should be already registered");
+  });
+
+  it('Only existing airline may register a new airline until there are at least four airlines registered', async () => {
+    let newAirline = accounts[2];
+
+    // ACT
+    await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline, value: 1});
+    let result = await config.flightSuretyData.isAirline.call(newAirline);
+
+    // ASSERT
+    assert.equal(result, true, "Airline should be able to register another airline if it has provided funding");
+  });
+
+
+  it('Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async () => {
+    await config.flightSuretyApp.registerAirline(accounts[3], {from: config.firstAirline, value: 1});
+    assert.equal(await config.flightSuretyData.isAirline.call(accounts[3]), true, "Airline 3 should be registered");
+    await config.flightSuretyApp.registerAirline(accounts[4], {from: config.firstAirline, value: 1});
+    assert.equal(await config.flightSuretyData.isAirline.call(accounts[4]), true, "Airline 4 should be registered");
+
+    await config.flightSuretyApp.registerAirline(accounts[5], {from: config.firstAirline, value: 1});
+    assert.equal(await config.flightSuretyData.isAirline.call(accounts[5]), false, "Airline 5 should still not be registered");
+
+    await config.flightSuretyApp.registerAirline(accounts[5], {from: accounts[2], value: 1});
+    await config.flightSuretyApp.registerAirline(accounts[5], {from: accounts[3], value: 1});
+    assert.equal(await config.flightSuretyData.isAirline.call(accounts[5]), true, "Airline 5 should be registered");
+  });
+  
+ 
 });
