@@ -11,17 +11,11 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    struct Insurance {
-        address airlineAddress;
-        string flightNumber;
-        uint256 ammount;
-    }
-
     address payable private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
     mapping(address => uint256) private authorizedContracts;
     mapping(address => bool) private airlines;
-    mapping(address => Insurance[]) private insurances;
+    mapping(bytes32 => uint256) private insurances;
     mapping(address => address[]) private airlineRegistrationRequests;
     mapping(address => uint256) private fundingByAirline;
 
@@ -167,9 +161,7 @@ contract FlightSuretyData {
     {
         require(msg.value > 0 ether, "Some value should be sent to buy an insurance.");
         require(msg.value <= 1 ether, "Max insurance ammount is 1 ether.");
-        insurances[msg.sender].push(
-            Insurance({airlineAddress: airlineAddress, flightNumber: flightNumber, ammount: msg.value})
-        );
+        insurances[getInsuranceKey(tx.origin, airlineAddress, flightNumber)] = msg.value;
         contractOwner.transfer(msg.value);
     }
 
@@ -182,18 +174,11 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay(string memory flightNumber) external requireIsOperational {
-        for (uint256 i = 0; i < insurances[msg.sender].length; i++) {
-            string memory currentFlightNumber = insurances[msg.sender][i].flightNumber;
-            if (
-                keccak256(abi.encodePacked(currentFlightNumber)) ==
-                keccak256(abi.encodePacked(flightNumber))
-            ) {
-                uint256 prev = insurances[msg.sender][i].ammount;
-                delete insurances[msg.sender][i];
-                payable(msg.sender).transfer(prev.mul(15).div(10));
-            }
-        }
+    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational {
+        bytes32 insuranceKey = getInsuranceKey(tx.origin, airlineAddress, flightNumber);
+        uint256 prev = insurances[insuranceKey];
+        delete insurances[insuranceKey];
+        payable(tx.origin).transfer(prev.mul(15).div(10));
     }
 
     /**
@@ -211,6 +196,14 @@ contract FlightSuretyData {
         uint256 timestamp
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
+    }
+
+    function getInsuranceKey(
+        address passenger,
+        address airline,
+        string memory flight
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(passenger, airline, flight));
     }
 
     /**
