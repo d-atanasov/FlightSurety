@@ -53,4 +53,18 @@ export default class Contract {
                 callback(error, payload);
             });
     }
+
+    buyInsurance(airlineAddress, flight, ammount, callback) {
+        let self = this;
+        let payload = {
+            airlineAddress: airlineAddress,
+            flightNumber: flight
+        }
+        const weiAmmount = Web3.utils.toWei(ammount, 'ether');
+        self.flightSuretyApp.methods
+            .buy(payload.airlineAddress, payload.flightNumber)
+            .send({ from: self.owner, value: weiAmmount}, (error, result) => {
+                callback(error, payload);
+            });
+    }
 }

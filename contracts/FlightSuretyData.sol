@@ -12,6 +12,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
 
     struct Insurance {
+        address airlineAddress;
         string flightNumber;
         uint256 ammount;
     }
@@ -151,20 +152,23 @@ contract FlightSuretyData {
     }
 
     function hasEnoughFunds(address airlineAddress) external view returns (bool) {
-        return fundingByAirline[airlineAddress] >= 10;
+        //TODO DA: chnage min ammount to 10
+        return fundingByAirline[airlineAddress] >= 10 ether;
     }
 
     /**
      * @dev Buy insurance for a flight
      *
      */
-    function buy(string memory flightNumber)
+    function buy(address airlineAddress, string memory flightNumber)
         external
         payable
         requireIsOperational
     {
+        require(msg.value > 0 ether, "Some value should be sent to buy an insurance.");
+        require(msg.value <= 1 ether, "Max insurance ammount is 1 ether.");
         insurances[msg.sender].push(
-            Insurance({flightNumber: flightNumber, ammount: msg.value})
+            Insurance({airlineAddress: airlineAddress, flightNumber: flightNumber, ammount: msg.value})
         );
         contractOwner.transfer(msg.value);
     }
@@ -197,9 +201,8 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund() public payable requireIsOperational {
-        contractOwner.transfer(msg.value);
-        fundingByAirline[tx.origin] = fundingByAirline[tx.origin].add(msg.value);
+    function fund(address airlineAddress) public payable requireIsOperational {
+        fundingByAirline[airlineAddress] = fundingByAirline[airlineAddress].add(msg.value);
     }
 
     function getFlightKey(
@@ -215,10 +218,10 @@ contract FlightSuretyData {
      *
      */
     fallback() external payable {
-        fund();
+        fund(tx.origin);
     }
 
     receive() external payable {
-        fund();
+        fund(tx.origin);
     }
 }

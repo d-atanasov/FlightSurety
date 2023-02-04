@@ -1,6 +1,7 @@
 
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
+var Web3 = require('web3');
 
 contract('Flight Surety Tests', async (accounts) => {
 
@@ -129,7 +130,7 @@ contract('Flight Surety Tests', async (accounts) => {
     } catch(e) {}
     assert.equal(await config.flightSuretyApp.isFlightRegistered.call(testFlight), false, "The flight should not be registered");
 
-    await config.flightSuretyData.fund({from: accounts[5], value: 10});
+    await config.flightSuretyApp.fund(accounts[5], {from: accounts[5], value: Web3.utils.toWei('10', 'ether')});
     await config.flightSuretyApp.registerFlight(accounts[5], testFlight, {from: accounts[5]});
     assert.equal(await config.flightSuretyApp.isFlightRegistered.call(testFlight), true, "The flight should be registered");
   });

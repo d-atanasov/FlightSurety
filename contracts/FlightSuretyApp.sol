@@ -99,8 +99,12 @@ contract FlightSuretyApp {
     {
         require(msg.value > 0, "Registring of an airline must be funded.");
         uint256 currentVotes = dataContract.registerAirline(airlineAddress);
-        dataContract.fund();
+        dataContract.fund{value:msg.value}(airlineAddress);
         return (dataContract.isAirline(airlineAddress), currentVotes);
+    }
+
+    function fund(address airlineAddress) external payable {
+        dataContract.fund{value:msg.value}(airlineAddress);
     }
 
     /**
@@ -129,6 +133,16 @@ contract FlightSuretyApp {
         returns (bool)
     {
         return flights[flightNumber].isRegistered;
+    }
+
+    function buy(address airlineAddress, string memory flightNumber)
+        external
+        payable
+        requireIsOperational
+    {
+        require(msg.value > 0 ether, "Some value should be sent to buy an insurance.");
+        require(msg.value <= 1 ether, "Max insurance ammount is 1 ether.");
+        dataContract.buy{value:msg.value}(airlineAddress, flightNumber);
     }
 
     /**
