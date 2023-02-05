@@ -67,13 +67,10 @@ flightSuretyApp.events.OracleRequest({
   const random = Math.floor(Math.random() * ALL_CODES.length);
   const returningStatusCode = ALL_CODES[random];
 
-  const randomIndex = Math.floor(Math.random() * indexes.length);
-  const returningIndex = indexes[randomIndex];
-
-  console.log("Returning status code and index: " + returningStatusCode + ", " + returningIndex);
+  console.log("Returning status code: " + returningStatusCode);
 
   flightSuretyApp.methods
-  .submitOracleResponse(returningIndex, requestValues.airline, requestValues.flight, requestValues.timestamp, returningStatusCode)
+  .submitOracleResponse(requestValues.index, requestValues.airline, requestValues.flight, requestValues.timestamp, returningStatusCode)
   .send({from: web3.eth.defaultAccount}, (error, result) => {
     if (error) { 
       console.log("Error on submitOracleResponse: " + error);
