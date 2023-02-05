@@ -3,6 +3,9 @@ import Config from './config.json';
 import Web3 from 'web3';
 import express from 'express';
 
+const NUMBER_OF_ORACLES = 10;
+let oracles = [];
+
 const STATUS_CODE_UNKNOWN = 0;
 const STATUS_CODE_ON_TIME = 10;
 const STATUS_CODE_LATE_AIRLINE = 20;
@@ -13,41 +16,45 @@ const STATUS_CODE_LATE_OTHER = 50;
 const ALL_CODES = [STATUS_CODE_UNKNOWN, STATUS_CODE_ON_TIME, STATUS_CODE_LATE_AIRLINE, STATUS_CODE_LATE_WEATHER, 
   STATUS_CODE_LATE_TECHNICAL, STATUS_CODE_LATE_OTHER];
 
-let indexes = [];
-
+let indexes;
 
 let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
+let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+
 web3.eth.getAccounts((error, accounts) => {
   if (error) { 
     console.log("Error on getAccounts: " + error);
     return;
   }
-  web3.eth.defaultAccount = accounts[0];
-  registerOracle();
+
+  for(let i = 0; i < NUMBER_OF_ORACLES; i++) {
+    console.log("Registre Oracle number: " + (i + 1));
+    let oracleAddress = accounts[i];
+    registerOracle(oracleAddress);
+    oracles.push(oracleAddress);
+  }
 });
 
-let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
-
-function registerOracle() {
-  console.log("web3.eth.defaultAccount : " + web3.eth.defaultAccount );
+function registerOracle(oracleAddress) {
+  console.log("Reistring Oracle with address : " + oracleAddress );
   flightSuretyApp.methods
   .registerOracle()
-  .send({from: web3.eth.defaultAccount, value: Web3.utils.toWei('0.1', 'ether'), gas: 1000000}, (error, result) => {
+  .send({from: oracleAddress, value: Web3.utils.toWei('0.1', 'ether'), gas: 1000000}, (error, result) => {
     if (error) { 
-      console.log("Error on registerOracle: " + error);
-      return;
+      console.log(`[Oracle: ${oracleAddress}] Error on registerOracle: ${error}`);
+      throw error;
     }
-    console.log("Success on registerOracle.");
+    console.log(`[Oracle: ${oracleAddress}] Success on registerOracle.`);
     
     flightSuretyApp.methods
     .getMyIndexes()
-    .call({from: web3.eth.defaultAccount}, (error, result) => {
+    .call({from: oracleAddress}, (error, result) => {
       if (error) { 
-        console.log("Error on getMyIndexes: " + error);
+        console.log(`[Oracle: ${oracleAddress}] Error on getMyIndexes: ${error}`);
         return;
       }
-      console.log("Recieve indexes:" + result);
+      console.log(`[Oracle: ${oracleAddress}] Recieve indexes: ${result}`);
       indexes = result;
     });
   });
@@ -57,27 +64,35 @@ flightSuretyApp.events.OracleRequest({
   fromBlock: 'latest'
 }, (error, event) => {
   if (error) { 
-    console.log("Error: " + error);
+    console.log("Error on OracleRequest: " + error);
     return;
   }
   
   let requestValues = event.returnValues;
-  console.log("Request recieved for: " + JSON.stringify(requestValues));
+  console.log(`Request recieved for:
+    airline: ${requestValues.airline}
+    flight: ${requestValues.flight}
+    timestamp: ${requestValues.timestamp}
+    index: ${requestValues.index}`);
 
-  const random = Math.floor(Math.random() * ALL_CODES.length);
-  const returningStatusCode = ALL_CODES[random];
+  for(let i = 0; i < oracles.length; i++) {
+    let currentOracleAddress = oracles[i];
 
-  console.log("Returning status code: " + returningStatusCode);
+    const random = Math.floor(Math.random() * ALL_CODES.length);
+    const returningStatusCode = ALL_CODES[random];
 
-  flightSuretyApp.methods
-  .submitOracleResponse(requestValues.index, requestValues.airline, requestValues.flight, requestValues.timestamp, returningStatusCode)
-  .send({from: web3.eth.defaultAccount}, (error, result) => {
-    if (error) { 
-      console.log("Error on submitOracleResponse: " + error);
-      return;
-    }
-    console.log("Success on submitOracleResponse.");
-  });
+    console.log(`[Oracle: ${currentOracleAddress}] Returning status code: ${returningStatusCode}`);
+
+    flightSuretyApp.methods
+    .submitOracleResponse(requestValues.index, requestValues.airline, requestValues.flight, requestValues.timestamp, returningStatusCode)
+    .send({from: currentOracleAddress}, (error, result) => {
+      if (error) { 
+        console.log(`[Oracle: ${currentOracleAddress}] Error on submitOracleResponse: ${error}`);
+        return;
+      }
+      console.log(`[Oracle: ${currentOracleAddress}]Success on submitOracleResponse with status code: ${returningStatusCode}.`);
+    });
+  }
 });
 
 const app = express();
