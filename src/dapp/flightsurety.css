@@ -40,3 +40,7 @@ label.form {
 input, select {
     margin-right: 30px;
 }
+
+.final-status {
+    color: greenyellow;
+}

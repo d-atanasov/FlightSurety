@@ -3,7 +3,7 @@ import Config from './config.json';
 import Web3 from 'web3';
 import express from 'express';
 
-const NUMBER_OF_ORACLES = 10;
+const NUMBER_OF_ORACLES = 20;
 let oracles = [];
 
 const STATUS_CODE_UNKNOWN = 0;

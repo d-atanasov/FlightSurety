@@ -24,6 +24,10 @@ export default class DOM {
     static elid(id) { 
       return document.getElementById(id);
     }
+
+    static selAll(selector) { 
+      return Array.from(document.querySelectorAll(selector));
+    }
   
     static appendText(el, text) {
       const textNode = document.createTextNode(text);

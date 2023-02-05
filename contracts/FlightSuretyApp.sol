@@ -246,7 +246,6 @@ contract FlightSuretyApp {
     function registerOracle() external payable {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
-        require(!oracles[msg.sender].isRegistered, "The Oracle is already registered.");
 
         uint8[3] memory indexes = generateIndexes(msg.sender);
 
@@ -293,9 +292,7 @@ contract FlightSuretyApp {
         // Information isn't considered verified until at least MIN_RESPONSES
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
-        if (
-            oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES
-        ) {
+        if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate

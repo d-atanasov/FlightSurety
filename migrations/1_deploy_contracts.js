@@ -5,8 +5,8 @@ var Web3 = require('web3');
 
 module.exports = function(deployer) {
 
-    let firstAirline = '0x6bbf1eC0335B725bA46e3e7EEaFcCF45C34833c9';
-    let secondAirline = '0x72468BAB7d2eE613EF8a7761f13338c16e350e77';
+    let firstAirline = '0x1A9bc17C36c793b8B265286C348acFEb102Be231';
+    let secondAirline = '0xDE656b9daa82751899FBccFeC4251B166d332Df5';
     deployer.deploy(FlightSuretyData)
     .then(() => {
         return deployer.deploy(FlightSuretyApp, FlightSuretyData.address)

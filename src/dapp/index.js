@@ -30,6 +30,8 @@ import './flightsurety.css';
     });
 
     initializeBuyInsurance(contract);
+
+    initializePayInsurance(contract);
 })();
 
 
@@ -49,25 +51,30 @@ function display(title, description, results) {
 }
 
 function initializeBuyInsurance(contract) {
-    populateAirlines();
-    initializeByuButton(contract);
+    populateAirlines("buy");
+    initializeBuyButton(contract);
 }
 
-function populateAirlines() {
-    let airlines = DOM.elid("insurance-airline");
+function initializePayInsurance(contract) {
+    populateAirlines("pay");
+    initializePayButton(contract);
+}
+
+function populateAirlines(idPrefix) {
+    let airlines = DOM.elid(`${idPrefix}-insurance-airline`);
     Config.airlines.forEach(airline => {
         airlines.appendChild(DOM.option(airline.name));
     });
 
     airlines.addEventListener("change", () => {
-        populateFlights(airlines);
+        populateFlights(airlines, idPrefix);
     });
 
-    populateFlights(airlines);
+    populateFlights(airlines, idPrefix);
 }
 
-function populateFlights(airlines) {
-    let flightsSelection = DOM.elid("insurance-flight-number");
+function populateFlights(airlines, idPrefix) {
+    let flightsSelection = DOM.elid(`${idPrefix}-insurance-flight-number`);
     flightsSelection.innerHTML = '';
     let selectedAirline = Config.airlines.filter(airline => airline.name === airlines.value)[0];
     selectedAirline.flights.forEach(flight => {
@@ -75,17 +82,31 @@ function populateFlights(airlines) {
     });
 }
 
-function initializeByuButton(contract) {
-    let buyButton = DOM.elid("buy-insuarnce");
+function initializeBuyButton(contract) {
+    let buyButton = DOM.elid("buy-insurance");
     buyButton.addEventListener("click", () => {
-        let selectedAirline = DOM.elid("insurance-airline").value;
+        let selectedAirline = DOM.elid("buy-insurance-airline").value;
         let selectedAirlineAddress = Config.airlines.filter(airline => airline.name === selectedAirline)[0].address;
-        let selectedFlight = DOM.elid("insurance-flight-number").value;
-        let selectedAmmount = DOM.elid("insurance-ammount").value;
+        let selectedFlight = DOM.elid("buy-insurance-flight-number").value;
+        let selectedAmmount = DOM.elid("buy-insurance-ammount").value;
 
         contract.buyInsurance(selectedAirlineAddress, selectedFlight, selectedAmmount, (error, result) => {
-            let resultDiv = DOM.elid("insuarnce-result");
+            let resultDiv = DOM.elid("buy-insurance-result");
             resultDiv.innerHTML = error ? "Error:" + error : "Insurance Purchased.";
+        });
+    });
+}
+
+function initializePayButton(contract) {
+    let payButton = DOM.elid("pay-insurance");
+    payButton.addEventListener("click", () => {
+        let selectedAirline = DOM.elid("pay-insurance-airline").value;
+        let selectedAirlineAddress = Config.airlines.filter(airline => airline.name === selectedAirline)[0].address;
+        let selectedFlight = DOM.elid("pay-insurance-flight-number").value;
+
+        contract.pay(selectedAirlineAddress, selectedFlight, (error, result) => {
+            let resultDiv = DOM.elid("pay-insurance-result");
+            resultDiv.innerHTML = error ? "Error:" + error : "Payment was successful.";
         });
     });
 }
