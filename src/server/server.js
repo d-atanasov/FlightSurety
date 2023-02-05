@@ -32,7 +32,6 @@ web3.eth.getAccounts((error, accounts) => {
     console.log("Registre Oracle number: " + (i + 1));
     let oracleAddress = accounts[i];
     registerOracle(oracleAddress);
-    oracles.push(oracleAddress);
   }
 });
 
@@ -55,7 +54,7 @@ function registerOracle(oracleAddress) {
         return;
       }
       console.log(`[Oracle: ${oracleAddress}] Recieve indexes: ${result}`);
-      indexes = result;
+      oracles.push({address: oracleAddress, indexes: result});
     });
   });
 }
@@ -69,30 +68,35 @@ flightSuretyApp.events.OracleRequest({
   }
   
   let requestValues = event.returnValues;
+  let airline = requestValues.airline;
+  let flight = requestValues.flight;
+  let timestamp = requestValues.timestamp;
+  let index = requestValues.index;
   console.log(`Request recieved for:
-    airline: ${requestValues.airline}
-    flight: ${requestValues.flight}
-    timestamp: ${requestValues.timestamp}
-    index: ${requestValues.index}`);
+    airline: ${airline}
+    flight: ${flight}
+    timestamp: ${timestamp}
+    index: ${index}`);
 
-  for(let i = 0; i < oracles.length; i++) {
-    let currentOracleAddress = oracles[i];
+    oracles.filter(oracle => oracle.indexes.includes(index)).
+    forEach(oracle => {
+      let currentOracleAddress = oracle.address;
 
-    const random = Math.floor(Math.random() * ALL_CODES.length);
-    const returningStatusCode = ALL_CODES[random];
-
-    console.log(`[Oracle: ${currentOracleAddress}] Returning status code: ${returningStatusCode}`);
-
-    flightSuretyApp.methods
-    .submitOracleResponse(requestValues.index, requestValues.airline, requestValues.flight, requestValues.timestamp, returningStatusCode)
-    .send({from: currentOracleAddress}, (error, result) => {
-      if (error) { 
-        console.log(`[Oracle: ${currentOracleAddress}] Error on submitOracleResponse: ${error}`);
-        return;
-      }
-      console.log(`[Oracle: ${currentOracleAddress}]Success on submitOracleResponse with status code: ${returningStatusCode}.`);
+      const random = Math.floor(Math.random() * ALL_CODES.length);
+      const returningStatusCode = ALL_CODES[random];
+  
+      console.log(`[Oracle: ${currentOracleAddress}] Returning status code: ${returningStatusCode}`);
+  
+      flightSuretyApp.methods
+      .submitOracleResponse(index, airline, flight, timestamp, returningStatusCode)
+      .send({from: currentOracleAddress}, (error, result) => {
+        if (error) { 
+          console.log(`[Oracle: ${currentOracleAddress}] Error on submitOracleResponse: ${error}`);
+          return;
+        }
+        console.log(`[Oracle: ${currentOracleAddress}] Success on submitOracleResponse with status code: ${returningStatusCode}.`);
+      });
     });
-  }
 });
 
 const app = express();
