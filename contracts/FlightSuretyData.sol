@@ -147,7 +147,7 @@ contract FlightSuretyData {
 
     function hasEnoughFunds(address airlineAddress) external view returns (bool) {
         //TODO DA: chnage min ammount to 10
-        return fundingByAirline[airlineAddress] >= 10 ether;
+        return fundingByAirline[airlineAddress] >= 1 ether;
     }
 
     /**
