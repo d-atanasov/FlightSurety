@@ -141,17 +141,19 @@ contract FlightSuretyApp {
         payable
         requireIsOperational
     {
+        require(flights[flightNumber].isRegistered, "Such flight does not exists.");
+        require(flights[flightNumber].statusCode == STATUS_CODE_UNKNOWN, "The the flight has already lended.");
         require(msg.value > 0 ether, "Some value should be sent to buy an insurance.");
         require(msg.value <= 1 ether, "Max insurance ammount is 1 ether.");
         dataContract.buy{value:msg.value}(airlineAddress, flightNumber);
     }
 
-    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational returns (uint256) {
+    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational {
         require(flights[flightNumber].isRegistered, "Such flight does not exists.");
         require(flights[flightNumber].statusCode != STATUS_CODE_UNKNOWN, "The status of the flight is still UNKNOWN.");
         require(flights[flightNumber].statusCode != STATUS_CODE_ON_TIME, "Insurance cannot be payed, as the flight was ON TIME.");
 
-        return dataContract.pay(airlineAddress, flightNumber);
+        dataContract.pay(airlineAddress, flightNumber);
     }
 
     /**

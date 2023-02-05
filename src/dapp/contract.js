@@ -74,13 +74,21 @@ export default class Contract {
             });
     }
 
-    pay(airlineAddress, flight, callback) {
+    async pay(airlineAddress, flight, callback) {
         let self = this;
+
+        let balanceBefore = await self.web3.eth.getBalance(self.owner);
 
         self.flightSuretyApp.methods
             .pay(airlineAddress, flight)
-            .send({ from: self.owner}, (error, result) => {
-                callback(error, result);
+            .send({ from: self.owner}, async (error, result) => {
+                if(!error) {
+                    let balanceAfter = await self.web3.eth.getBalance(self.owner);
+                    let difference = new Web3.utils.BN(balanceAfter).sub(new Web3.utils.BN(balanceBefore));
+                    callback(error, Web3.utils.fromWei(difference.toString(), "ether"));
+                } else {
+                    callback(error, result);
+                }
             });
     }
 

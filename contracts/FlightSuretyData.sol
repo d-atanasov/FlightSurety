@@ -169,7 +169,7 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational returns (uint256) {
+    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational {
         bytes32 insuranceKey = getInsuranceKey(tx.origin, airlineAddress, flightNumber);
         require(insurances[insuranceKey] != 0 ether, "Insurance was already payed.");
 
@@ -178,7 +178,6 @@ contract FlightSuretyData {
         //add 50% of the insurance anmmount
         uint256 ammountToPay = insuranceAmmount.mul(15).div(10);
         payable(tx.origin).transfer(ammountToPay);
-        return ammountToPay;
     }
 
     /**

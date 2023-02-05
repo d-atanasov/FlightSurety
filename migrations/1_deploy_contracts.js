@@ -21,12 +21,12 @@ module.exports = function(deployer) {
                             {
                                 name: "Air 1",
                                 address: firstAirline,
-                                flights: ["A1-1111", "A1-2222"]
+                                flights: ["A1-1111", "A1-2222", "A1-3333"]
                             },
                             {
                                 name: "Air 2",
                                 address: secondAirline,
-                                flights: ["A2-3333", "A2-4444"]
+                                flights: ["A2-4444", "A2-5555", "A2-6666"]
                             }
                         ]
                     }
@@ -37,10 +37,12 @@ module.exports = function(deployer) {
                     await flightSuretyApp.registerAirline(firstAirline, {value: Web3.utils.toWei('1', 'ether')});
                     await flightSuretyApp.registerFlight(firstAirline, "A1-1111", {from: firstAirline});
                     await flightSuretyApp.registerFlight(firstAirline, "A1-2222", {from: firstAirline});
+                    await flightSuretyApp.registerFlight(firstAirline, "A1-3333", {from: firstAirline});
 
                     await flightSuretyApp.registerAirline(secondAirline, {from: firstAirline, value: Web3.utils.toWei('1', 'ether')});
-                    await flightSuretyApp.registerFlight(secondAirline, "A2-3333", {from: secondAirline});
                     await flightSuretyApp.registerFlight(secondAirline, "A2-4444", {from: secondAirline});
+                    await flightSuretyApp.registerFlight(secondAirline, "A2-5555", {from: secondAirline});
+                    await flightSuretyApp.registerFlight(secondAirline, "A2-6666", {from: secondAirline});
                 });
     });
 }
