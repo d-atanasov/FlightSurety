@@ -151,7 +151,7 @@ contract FlightSuretyApp {
         require(flights[flightNumber].statusCode != STATUS_CODE_UNKNOWN, "The status of the flight is still UNKNOWN.");
         require(flights[flightNumber].statusCode != STATUS_CODE_ON_TIME, "Insurance cannot be payed, as the flight was ON TIME.");
 
-        return dataContract.pay(airlineAddress, flightNumber); 
+        return dataContract.pay(airlineAddress, flightNumber);
     }
 
     /**
@@ -163,13 +163,12 @@ contract FlightSuretyApp {
         string memory flightNumber,
         uint256 timestamp,
         uint8 statusCode
-    ) internal view {
+    ) internal {
         require(statusCode != STATUS_CODE_UNKNOWN, "Cannot process flight with UNKNOWN status.");
         require(flights[flightNumber].airline == airline, "There is no such fligh for the provided airline.");
 
-        Flight memory flight = flights[flightNumber];
-        flight.updatedTimestamp = timestamp;
-        flight.statusCode = statusCode;
+        flights[flightNumber].updatedTimestamp = timestamp;
+        flights[flightNumber].statusCode = statusCode;
     }
 
     // Generate a request for oracles to fetch flight information
