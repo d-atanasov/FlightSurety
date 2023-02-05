@@ -116,6 +116,7 @@ contract FlightSuretyApp {
         requireIsOperational
     {
         require(msg.sender == airlineAddress, "Cannot register flight for another airline.");
+        require(!flights[flightNumber].isRegistered, "Flight with this number is already registered.");
         require(dataContract.hasEnoughFunds(airlineAddress), "The Airline do not have enough funds deposited, to create a flight.");
 
         flights[flightNumber] = Flight({
@@ -145,8 +146,12 @@ contract FlightSuretyApp {
         dataContract.buy{value:msg.value}(airlineAddress, flightNumber);
     }
 
-    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational {
-        dataContract.pay(airlineAddress, flightNumber);
+    function pay(address airlineAddress, string memory flightNumber) external requireIsOperational returns (uint256) {
+        require(flights[flightNumber].isRegistered, "Such flight does not exists.");
+        require(flights[flightNumber].statusCode != STATUS_CODE_UNKNOWN, "The status of the flight is still UNKNOWN.");
+        require(flights[flightNumber].statusCode != STATUS_CODE_ON_TIME, "Insurance cannot be payed, as the flight was ON TIME.");
+
+        return dataContract.pay(airlineAddress, flightNumber); 
     }
 
     /**
@@ -159,11 +164,12 @@ contract FlightSuretyApp {
         uint256 timestamp,
         uint8 statusCode
     ) internal view {
+        require(statusCode != STATUS_CODE_UNKNOWN, "Cannot process flight with UNKNOWN status.");
+        require(flights[flightNumber].airline == airline, "There is no such fligh for the provided airline.");
+
         Flight memory flight = flights[flightNumber];
         flight.updatedTimestamp = timestamp;
         flight.statusCode = statusCode;
-
-        airline == airline;
     }
 
     // Generate a request for oracles to fetch flight information
@@ -172,17 +178,24 @@ contract FlightSuretyApp {
         string memory flight,
         uint256 timestamp
     ) external {
-        uint8 index = getRandomIndex(msg.sender);
+        require(flights[flight].isRegistered, "No such flight is registered.");
+        require(flights[flight].airline == airline, "There is no such fligh for the provided airline.");
 
-        // Generate a unique key for storing the request
-        bytes32 key = keccak256(
-            abi.encodePacked(index, airline, flight, timestamp)
-        );
+        if(flights[flight].statusCode != STATUS_CODE_UNKNOWN) {
+            emit FlightStatusInfo(airline, flight, timestamp, flights[flight].statusCode);
+        } else {
+            uint8 index = getRandomIndex(msg.sender);
 
-        oracleResponses[key].requester = msg.sender;
-        oracleResponses[key].isOpen = true;
+            // Generate a unique key for storing the request
+            bytes32 key = keccak256(
+                abi.encodePacked(index, airline, flight, timestamp)
+            );
 
-        emit OracleRequest(index, airline, flight, timestamp);
+            oracleResponses[key].requester = msg.sender;
+            oracleResponses[key].isOpen = true;
+
+            emit OracleRequest(index, airline, flight, timestamp);
+        }
     }
 
     // region ORACLE MANAGEMENT
@@ -292,7 +305,7 @@ contract FlightSuretyApp {
         // Information isn't considered verified until at least MIN_RESPONSES
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
-        if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
+        if (statusCode != STATUS_CODE_UNKNOWN && oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate

@@ -46,10 +46,10 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
-    fetchFlightStatus(flight, callback) {
+    fetchFlightStatus(airlineAddress, flight, callback) {
         let self = this;
         let payload = {
-            airline: self.airlines[0],
+            airline: airlineAddress,
             flight: flight,
             timestamp: Math.floor(Date.now() / 1000)
         } 
